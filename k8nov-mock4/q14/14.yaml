@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: http
+  namespace: qq8
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: http
+  template:
+    metadata:
+      labels:
+        app: http
+    spec:
+      containers:
+      - name: http
+        image: traefik/whoami
+        ports:
+        - containerPort: 80
+
+---
+
+# filepath: /c:/codes/k8nov-mocks/k8nov-mock4/q14/http-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: http
+  namespace: qq8
+spec:
+  selector:
+    app: http
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 80
+  type: LoadBalancer

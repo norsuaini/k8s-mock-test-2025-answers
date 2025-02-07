@@ -1,0 +1,96 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mongo-pv
+spec:
+  capacity:
+    storage: 3Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  hostPath:
+    path: "/mnt/data"
+
+---
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-pvc
+  namespace: qq3
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi
+  storageClassName: manual
+
+---
+# filepath: /c:/codes/k8nov-mocks/k8nov-mock4/q03/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: database
+  namespace: qq3
+spec:
+  serviceName: "database"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      containers:
+      - name: mongo
+        image: mongo:latest
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: MONGO_INITDB_ROOT_USERNAME
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: MONGO_INITDB_ROOT_PASSWORD
+        volumeMounts:
+        - mountPath: /etc/mongo
+          name: mongo-storage
+      - name: mongo-express
+        image: mongo-express:latest
+        env:
+        - name: ME_CONFIG_MONGODB_URL
+          valueFrom:
+            configMapKeyRef:
+              name: mongo-express-config
+              key: ME_CONFIG_MONGODB_URL
+        - name: ME_CONFIG_BASICAUTH
+          valueFrom:
+            configMapKeyRef:
+              name: mongo-express-config
+              key: ME_CONFIG_BASICAUTH
+        - name: ME_CONFIG_MONGODB_ADMINUSERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: ME_CONFIG_MONGODB_ADMINUSERNAME
+        - name: ME_CONFIG_MONGODB_ADMINPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: ME_CONFIG_MONGODB_ADMINPASSWORD
+  volumeClaimTemplates:
+  - metadata:
+      name: mongo-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 3Gi
