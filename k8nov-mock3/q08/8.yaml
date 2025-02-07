@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-data
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /mnt/data
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-data
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  volumeName: pv-data
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web-stateful
+  namespace: default
+spec:
+  serviceName: "web-stateful"
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web-stateful
+  template:
+    metadata:
+      labels:
+        app: web-stateful
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:stable
+        volumeMounts:
+        - name: web-storage
+          mountPath: /usr/share/nginx/html
+  volumeClaimTemplates:
+  - metadata:
+      name: web-storage
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 5Gi
+
+---
+
